@@ -1,18 +1,14 @@
 <?php
 
-namespace tests\Udger;
+namespace unit;
 
+use Codeception\TestCase\Test;
 use Udger\ParserFactory;
+use Udger\Parser;
 
-class ParserFactoryTest extends \Codeception\TestCase\Test {
-
+class ParserFactoryTest extends Test
+{
     /**
-     * @var \UnitGuy
-     */
-    protected $guy;
-    
-    /**
-     *
      * @var ParserFactory
      */
     protected $factory;
@@ -21,12 +17,12 @@ class ParserFactoryTest extends \Codeception\TestCase\Test {
     {
         $this->factory = new ParserFactory("/dev/null");
     }
-    
+
     public function testGetParser()
     {
-        $this->assertInstanceOf("Udger\Parser", $this->factory->getParser());
+        self::assertInstanceOf(Parser::class, $this->factory->getParser());
     }
-    
+
     public function testNewFactoryWithoutPathShouldFail()
     {
         $this->setExpectedException('PHPUnit_Framework_Exception');

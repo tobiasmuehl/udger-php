@@ -10,6 +10,7 @@
 
 namespace Udger;
 
+use Exception;
 use Psr\Log\LoggerInterface;
 use Udger\Helper\IPInterface;
 
@@ -89,6 +90,10 @@ class Parser implements ParserInterface
      * @int LRU cache size
      */
     protected $cacheSize = 3000;
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
 
     /**
      * @param LoggerInterface $logger
@@ -110,7 +115,7 @@ class Parser implements ParserInterface
         $this->logger->debug("account: start");
 
         if (empty($this->access_key)) {
-            throw new \Exception("access key not set");
+            throw new Exception("access key not set");
         }
 
         $accountUrl = sprintf("%s/%s", $this->api_url, "account");
@@ -131,7 +136,7 @@ class Parser implements ParserInterface
 
         // check for non zero staus codes
         if (isset($data['flag']) && $data['flag'] > 0) {
-            throw new \Exception($data['errortext']);
+            throw new Exception($data['errortext']);
         }
 
         return $data;
@@ -559,11 +564,15 @@ class Parser implements ParserInterface
     }
 
     /**
-     * Open DB file 
+     * Open DB file
+     * @throws Exception
      */
     protected function setDBdat()
     {
         if (is_null($this->dbdat)) {
+            if (is_null($this->path)) {
+                throw new Exception("Unable to expand filepath");
+            }
             $this->logger->debug(sprintf("db: open file: %s", $this->path));
             $this->dbdat = new \SQLite3($this->path, SQLITE3_OPEN_READONLY);
         }
@@ -644,7 +653,7 @@ class Parser implements ParserInterface
     public function setDataFile($path)
     {
         if (false === file_exists($path)) {
-            throw new \Exception(sprintf("%s does not exist", $path));
+            throw new Exception(sprintf("%s does not exist", $path));
         }   
         
         $this->path = $path;

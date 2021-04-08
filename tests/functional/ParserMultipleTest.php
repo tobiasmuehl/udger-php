@@ -1,31 +1,26 @@
 <?php
 
-namespace tests\Udger;
+namespace functional;
 
-class ParserMultipleTest extends \Codeception\TestCase\Test {
+use Codeception\TestCase\Test;
+use Codeception\Util\Stub;
+use Udger\Parser;
+use Psr\Log\LoggerInterface;
+use Udger\Helper\IP;
 
+class ParserMultipleTest extends Test
+{
     /**
-     * @var \UnitGuy
-     */
-    protected $guy;
-
-    /**
-     *
      * @var Parser
      */
     protected $parser;
 
     protected function _before()
     {
-        $this->parser = new \Udger\Parser(
-                \Codeception\Util\Stub::makeEmpty("Psr\Log\LoggerInterface"),
-                \Codeception\Util\Stub::makeEmpty("Udger\Helper\IP"));
+        $this->parser = new Parser(
+            Stub::makeEmpty(LoggerInterface::class),
+            Stub::makeEmpty(IP::class));
         $this->parser->setDataFile(dirname(__DIR__) . "/fixtures/udgercache/udgerdb_v3.dat");
-    }
-
-    protected function _after()
-    {
-        
     }
 
     //tests
@@ -34,7 +29,7 @@ class ParserMultipleTest extends \Codeception\TestCase\Test {
         $handle = fopen(dirname(__DIR__) . "/fixtures/agents.txt", "r");
         if ($handle) {
             while (($line = fgets($handle)) !== false) {
-                $result = $this->parser->parse($line);
+                $result = $this->parser->parse();
             }
             fclose($handle);
         } else {
@@ -42,3 +37,4 @@ class ParserMultipleTest extends \Codeception\TestCase\Test {
         }
     }
 }
+

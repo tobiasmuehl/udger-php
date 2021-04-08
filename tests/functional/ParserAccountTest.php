@@ -1,41 +1,32 @@
 <?php
 
-namespace tests\Udger;
+namespace functional;
 
-class ParserAccountTest extends \Codeception\TestCase\Test
+use Codeception\TestCase\Test;
+use Codeception\Util\Stub;
+use Udger\Parser;
+use Psr\Log\LoggerInterface;
+use Udger\Helper\IP;
+
+class ParserAccountTest extends Test
 {
-    /**
-     * @var \FunctionalGuy
-     */
-    protected $guy;
-
-    protected function _before()
-    {
-        
-    }
-
-    protected function _after()
-    {
-    }
-    
-    // tests
     public function testAccount()
     {
-        $parser = new \Udger\Parser(
-                \Codeception\Util\Stub::makeEmpty("Psr\Log\LoggerInterface"),
-                \Codeception\Util\Stub::makeEmpty("Udger\Helper\IP"));
+        $parser = new Parser(
+            Stub::makeEmpty(LoggerInterface::class),
+            Stub::makeEmpty(IP::class));
         $parser->setAccessKey("nosuchkey");
-        
+
         $this->setExpectedException("Exception");
         $parser->account();
     }
-    
+
     public function testAccountMissingKey()
     {
-        $parser = new \Udger\Parser(
-                \Codeception\Util\Stub::makeEmpty("Psr\Log\LoggerInterface"),
-                \Codeception\Util\Stub::makeEmpty("Udger\Helper\IP"));
-        
+        $parser = new Parser(
+            Stub::makeEmpty(LoggerInterface::class),
+            Stub::makeEmpty(IP::class));
+
         $this->setExpectedException("Exception", "access key not set");
         $parser->account();
     }
