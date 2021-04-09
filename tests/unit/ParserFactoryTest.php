@@ -15,7 +15,7 @@ class ParserFactoryTest extends Test
 
     protected function _before()
     {
-        $this->factory = new ParserFactory("/dev/null");
+        $this->factory = new ParserFactory('/dev/null');
     }
 
     public function testGetParser()
@@ -27,5 +27,18 @@ class ParserFactoryTest extends Test
     {
         $this->setExpectedException('PHPUnit_Framework_Exception');
         new ParserFactory();
+    }
+
+    public function testGetParserFromDataFile()
+    {
+        self::assertInstanceOf(Parser::class, ParserFactory::buildParserFromDataFile('/dev/null'));
+    }
+
+    public function testGetParserFromMySQL()
+    {
+        self::assertInstanceOf(
+            Parser::class,
+            ParserFactory::buildParserFromMySQL('dsn', 'user', 'password')
+        );
     }
 }

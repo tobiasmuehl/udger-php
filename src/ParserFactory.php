@@ -14,10 +14,7 @@ use Psr\Log\LoggerInterface;
  */
 class ParserFactory
 {
-    /**
-     * @var string
-     */
-    private $loggerName = 'udger';
+    const LOGGER_NAME = 'udger';
 
     /**
      * @var LoggerInterface
@@ -35,13 +32,22 @@ class ParserFactory
      */
     public function __construct($dataFile, $logger = null)
     {
+        $this->dataFile = $dataFile;
+        $this->logger = self::buildLogger($logger);
+    }
+
+    /**
+     * @param LoggerInterface|null $logger
+     * @return LoggerInterface
+     */
+    private static function buildLogger($logger)
+    {
         if (is_null($logger)) {
-            // create a log channel
-            $logger = new Logger($this->loggerName);
+            $logger = new Logger(self::LOGGER_NAME);
             $logger->pushHandler(new NullHandler());
         }
-        $this->dataFile = $dataFile;
-        $this->logger = $logger;
+
+        return $logger;
     }
 
     /**
@@ -52,6 +58,33 @@ class ParserFactory
     {
         $parser = new Parser($this->logger, new Helper\IP());
         $parser->setDataFile($this->dataFile);
+        return $parser;
+    }
+
+    /**
+     * @param string $dataFile
+     * @param LoggerInterface|null $logger
+     * @return Parser
+     * @throws Exception
+     */
+    public static function buildParserFromDataFile($dataFile, $logger = null)
+    {
+        $parser = new Parser(self::buildLogger($logger), new Helper\IP());
+        $parser->setDataFile($dataFile);
+        return $parser;
+    }
+
+    /**
+     * @param string $dsn
+     * @param string $user
+     * @param string $password
+     * @param LoggerInterface|null $logger
+     * @return Parser
+     */
+    public static function buildParserFromMySQL($dsn, $user, $password, $logger = null)
+    {
+        $parser = new Parser(self::buildLogger($logger), new Helper\IP());
+        $parser->setMySQLConnection($dsn, $user, $password);
         return $parser;
     }
 }

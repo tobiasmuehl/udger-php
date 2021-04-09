@@ -24,7 +24,7 @@ class MissingDatfileTest extends Test
 
     public function testParseWithMissingDatfile()
     {
-        $this->setExpectedException("Exception", "Unable to expand filepath");
+        $this->setExpectedException("Exception", "Unable to find database source");
         $this->parser->parse();
     }
 }

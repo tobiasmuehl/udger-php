@@ -95,6 +95,10 @@ class Parser implements ParserInterface
      * @var LoggerInterface
      */
     protected $logger;
+    /**
+     * @var array
+     */
+    protected $mySQLConnection;
 
     /**
      * @param LoggerInterface $logger
@@ -620,12 +624,22 @@ class Parser implements ParserInterface
     protected function setDBdat()
     {
         if (is_null($this->dbdat)) {
-            if (is_null($this->path)) {
-                throw new Exception("Unable to expand filepath");
+            if (is_null($this->path) && is_null($this->mySQLConnection)) {
+                throw new Exception("Unable to find database source");
             }
-            $this->logger->debug(sprintf("db: open file: %s", $this->path));
 
-            $this->dbdat = new PDO("sqlite:{$this->path}");
+            if (!is_null($this->mySQLConnection)) {
+                $this->dbdat = new PDO(
+                    $this->mySQLConnection['dsn'],
+                    $this->mySQLConnection['user'],
+                    $this->mySQLConnection['password']
+                );
+                $this->logger->debug(sprintf("mysql: open connection: %s", $this->mySQLConnection['dsn']));
+            } else {
+                $this->dbdat = new PDO("sqlite:{$this->path}");
+                $this->logger->debug(sprintf("sqlite: open file: %s", $this->path));
+            }
+
             $this->dbdat->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             $this->dbdat->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
@@ -714,6 +728,21 @@ class Parser implements ParserInterface
         }
 
         $this->path = $path;
+
+        return true;
+    }
+
+    /**
+     * @param $dsn
+     * @return bool
+     */
+    public function setMySQLConnection($dsn, $user, $password)
+    {
+        $this->mySQLConnection = [
+            'dsn' => $dsn,
+            'user' => $user,
+            'password' => $password,
+        ];
 
         return true;
     }
