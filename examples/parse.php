@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 // creates a new UdgerParser object
 $parser = ParserFactory::buildParserFromMySQL('mysql:host=db;dbname=udger;charset=UTF8', 'udger', 'udger');
+//$parser = ParserFactory::buildParserFromDataFile(sys_get_temp_dir() . '/udgercache/udgerdb_v3.dat');
 //$parser->setCacheEnable(false);
 //$parser->setCacheSize(4000);
 
