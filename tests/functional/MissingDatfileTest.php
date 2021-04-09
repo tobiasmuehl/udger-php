@@ -1,36 +1,30 @@
 <?php
 
+namespace functional;
 
-class MissingDatfileTest extends \Codeception\TestCase\Test
+use Codeception\TestCase\Test;
+use Codeception\Util\Stub;
+use Udger\Parser;
+use Psr\Log\LoggerInterface;
+use Udger\Helper\IP;
+
+class MissingDatfileTest extends Test
 {
     /**
-     * @var \FunctionalGuy
-     */
-    protected $guy;
-
-    /**
-     *
      * @var Parser
      */
     protected $parser;
 
     protected function _before()
     {
-        $this->parser = new \Udger\Parser(
-                \Codeception\Util\Stub::makeEmpty("Psr\Log\LoggerInterface"),
-                \Codeception\Util\Stub::makeEmpty("Udger\Helper\IP"));
+        $this->parser = new Parser(
+                Stub::makeEmpty(LoggerInterface::class),
+                Stub::makeEmpty(IP::class));
     }
 
-    protected function _after()
-    {
-    }
-    
-    // tests
     public function testParseWithMissingDatfile()
-    {   
-        $useragent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36';
-        
-        $this->setExpectedException("Exception", "Unable to expand filepath");
-        $this->parser->parse($useragent);
+    {
+        $this->setExpectedException("Exception", "Unable to find database source");
+        $this->parser->parse();
     }
 }

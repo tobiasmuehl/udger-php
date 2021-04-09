@@ -1,4 +1,5 @@
 /nbproject/*
 /run/*
 /vendor/
-composer.lock
+.idea
+/tests/_log/*.log

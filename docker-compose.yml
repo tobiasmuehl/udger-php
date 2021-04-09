@@ -1,0 +1,26 @@
+version: '3'
+services:
+  php:
+    build:
+      context: ./
+    working_dir: /usr/src/myapp
+    volumes:
+      - ./:/usr/src/myapp
+    depends_on:
+      - db
+    command: ./vendor/bin/codecept run
+
+  db:
+    image: mariadb
+    environment:
+      MYSQL_USER: udger
+      MYSQL_PASSWORD: udger
+      MYSQL_DATABASE: udger
+      MYSQL_ROOT_PASSWORD: udger
+
+  init:
+    image: python
+    working_dir: /usr/src/myapp
+    volumes:
+      - ./tests/fixtures/udgercache:/usr/src/myapp
+    command: bash -c "pip install sqlite3-to-mysql && sqlite3mysql -f udgerdb_v3.dat -d udger -u udger -p udger -h db"

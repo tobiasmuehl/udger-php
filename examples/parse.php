@@ -1,19 +1,21 @@
 <?php
 
+use Udger\ParserFactory;
+
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 // creates a new UdgerParser object
-$factory = new Udger\ParserFactory(sys_get_temp_dir() . "/udgercache/udgerdb_v3.dat");
-$parser = $factory->getParser();
+$parser = ParserFactory::buildParserFromMySQL('mysql:host=db;dbname=udger;charset=UTF8', 'udger', 'udger');
+//$parser = ParserFactory::buildParserFromDataFile(sys_get_temp_dir() . '/udgercache/udgerdb_v3.dat');
 //$parser->setCacheEnable(false);
 //$parser->setCacheSize(4000);
 
 try {
-    $parser->setUA('Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.97 Safari/537.36');
-    $parser->setIP("66.249.64.1");
+    $parser->setUA('Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0');
+    $parser->setIP("66.249.64.73");
 
     $ret = $parser->parse();
     var_dump($ret);
 } catch (Exception $ex) {
-    echo "Error: " . $ex->getMessage(). PHP_EOL;
+    echo "Error: " . $ex->getMessage() . PHP_EOL;
 }

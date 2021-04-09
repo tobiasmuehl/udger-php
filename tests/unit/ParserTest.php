@@ -1,65 +1,52 @@
 <?php
 
-namespace tests\Udger;
+namespace unit;
 
-class ParserTest extends \Codeception\TestCase\Test {
+use Codeception\TestCase\Test;
+use Codeception\Util\Stub;
+use Udger\Parser;
+use Psr\Log\LoggerInterface;
+use Udger\Helper\IP;
 
+class ParserTest extends Test
+{
     /**
-     * @var \UnitGuy
-     */
-    protected $guy;
-    
-    /**
-     *
      * @var Parser
      */
     protected $parser;
 
     protected function _before()
     {
-        $this->parser = new \Udger\Parser(
-                \Codeception\Util\Stub::makeEmpty("Psr\Log\LoggerInterface"),
-                \Codeception\Util\Stub::makeEmpty("Udger\Helper\IP"));
-        #$this->parser->setAccessKey("udger-php-unit");
+        $this->parser = new Parser(
+            Stub::makeEmpty(LoggerInterface::class),
+            Stub::makeEmpty(IP::class));
         $this->parser->setDataFile("/dev/null");
     }
 
-    protected function _after()
-    {
-        
-    }
-
-    // tests
     public function testSetDataFile()
     {
         $this->setExpectedException("Exception");
-        $this->assertTrue($this->parser->setDataFile("/this/is/a/missing/path"));
+        self::assertTrue($this->parser->setDataFile("/this/is/a/missing/path"));
     }
 
     public function testSetAccessKey()
     {
-        $this->assertTrue($this->parser->setAccessKey("123456"));
+        self::assertTrue($this->parser->setAccessKey("123456"));
     }
-    
+
     public function testSetUA()
     {
-        $this->assertTrue($this->parser->setUA("agent"));
+        self::assertTrue($this->parser->setUA("agent"));
     }
-    
+
     public function testSetIP()
-    {   
-        $this->assertTrue($this->parser->setIP("0.0.0.0"));
-    }
-    
-    public function testParse()
-    {   
-        #$this->setExpectedException("Exception");
-        $this->parser->parse();
+    {
+        self::assertTrue($this->parser->setIP("0.0.0.0"));
     }
 
     public function testAccount()
-    {   
+    {
         $this->setExpectedException("Exception");
-        $this->parser->account("test key");
+        $this->parser->account();
     }
 }
