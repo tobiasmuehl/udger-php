@@ -25,7 +25,7 @@ class ParserFactoryTest extends Test
 
     public function testNewFactoryWithoutPathShouldFail()
     {
-        $this->setExpectedException('PHPUnit_Framework_Exception');
+        $this->setExpectedException('ArgumentCountError');
         new ParserFactory();
     }
 

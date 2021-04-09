@@ -11,7 +11,7 @@ It also provides information about IP addresses (Public proxies, VPN services, T
 - Up to date data provided by https://udger.com/
 
 ### Requirements
-- php >= 5.6.0
+- php >= 7.2.0
 - [PDO](https://www.php.net/manual/en/book.pdo.php)
    
 #### For local DB
