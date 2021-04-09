@@ -1,7 +1,7 @@
 <?php
 /**
  * UdgerParser - Local parser class
- * 
+ *
  * @package    UdgerParser
  * @author     The Udger.com Team (info@udger.com)
  * @license    http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
@@ -11,81 +11,81 @@
 namespace Udger;
 
 use Exception;
+use GuzzleHttp\Client;
 use Psr\Log\LoggerInterface;
 use Udger\Helper\IPInterface;
 
 /**
  * udger.com Local Parser Class
- * 
+ *
  * @package UdgerParser
  */
 class Parser implements ParserInterface
 {
-    
     /**
      * Default timeout for network requests
-     * 
+     *
      * @type integer
      */
     protected $timeout = 60; // in seconds
 
     /**
      * Api URL
-     * 
+     *
      * @type string
      */
     protected $api_url = 'http://api.udger.com/v3';
 
     /**
      * Path to the data file
-     * 
+     *
      * @type string
      */
     protected $path;
 
     /**
      * Personal access key
-     * 
+     *
      * @type string
      */
     protected $access_key;
 
     /**
      * IP address for parse
-     * 
+     *
      * @type string
      */
     protected $ip;
 
     /**
      * Useragent string for parse
-     * 
+     *
      * @type string
      */
     protected $ua;
 
     /**
      * DB link
-     * 
+     *
      * @type object
      */
     protected $dbdat;
-    
+
     /**
-     * @var IPInterface 
+     * @var IPInterface
      */
     protected $ipHelper;
-    
+
     /**
      * @boolean LRU cache enable/disable
      */
     protected $cacheEnable = true;
-    
+
     /**
      * @array LRU cache
      */
-    protected $cache = array();
-    
+    protected $cache = [];
+
     /**
      * @int LRU cache size
      */
@@ -97,7 +97,7 @@ class Parser implements ParserInterface
 
     /**
      * @param LoggerInterface $logger
-     * @param IPInterface
+     * @param IPInterface $ipHelper
      */
     public function __construct(LoggerInterface $logger, IPInterface $ipHelper)
     {
@@ -107,8 +107,9 @@ class Parser implements ParserInterface
 
     /**
      * Check your subscription
-     * 
+     *
      * @return array
+     * @throws Exception
      */
     public function account()
     {
@@ -119,7 +120,7 @@ class Parser implements ParserInterface
         }
 
         $accountUrl = sprintf("%s/%s", $this->api_url, "account");
-        $client = new \GuzzleHttp\Client();
+        $client = new Client();
 
         $result = $client->post($accountUrl, array(
             'multipart' => array(
@@ -134,7 +135,7 @@ class Parser implements ParserInterface
         $contents = $result->getBody()->getContents();
         $data = json_decode($contents, true);
 
-        // check for non zero staus codes
+        // check for non zero status codes
         if (isset($data['flag']) && $data['flag'] > 0) {
             throw new Exception($data['errortext']);
         }
@@ -144,7 +145,7 @@ class Parser implements ParserInterface
 
     /**
      * Set the useragent string
-     * 
+     *
      * @param string
      * @return bool
      */
@@ -157,7 +158,7 @@ class Parser implements ParserInterface
 
     /**
      * Set the IP address
-     * 
+     *
      * @param string
      * @return bool
      */
@@ -170,8 +171,9 @@ class Parser implements ParserInterface
 
     /**
      * Parse the useragent string and/or IP
-     * 
+     *
      * @return array
+     * @throws Exception
      */
     public function parse()
     {
@@ -180,100 +182,105 @@ class Parser implements ParserInterface
         // validate
         if (is_null($this->dbdat) === true) {
             $this->logger->debug('db: data file not found, download the data manually from http://data.udger.com/');
-            return array('flag' => 3,
-                'errortext' => 'data file not found');
+            return array(
+                'flag' => 3,
+                'errortext' => 'data file not found'
+            );
         }
 
         //ret values
-        $ret = array('user_agent' =>
-            array('ua_string' => '',
-                'ua_class' => '',
-                'ua_class_code' => '',
-                'ua' => '',
-                'ua_version' => '',
-                'ua_version_major' => '',
-                'ua_uptodate_current_version' => '',
-                'ua_family' => '',
-                'ua_family_code' => '',
-                'ua_family_homepage' => '',
-                'ua_family_vendor' => '',
-                'ua_family_vendor_code' => '',
-                'ua_family_vendor_homepage' => '',
-                'ua_family_icon' => '',
-                'ua_family_icon_big' => '',
-                'ua_family_info_url' => '',
-                'ua_engine' => '',
-                'os' => '',
-                'os_code' => '',
-                'os_homepage' => '',
-                'os_icon' => '',
-                'os_icon_big' => '',
-                'os_info_url' => '',
-                'os_family' => '',
-                'os_family_code' => '',
-                'os_family_vendor' => '',
-                'os_family_vendor_code' => '',
-                'os_family_vendor_homepage' => '',
-                'device_class' => '',
-                'device_class_code' => '',
-                'device_class_icon' => '',
-                'device_class_icon_big' => '',
-                'device_class_info_url' => '',
-                'device_marketname'             => '',
-                'device_brand'                  => '',
-                'device_brand_code'             => '',
-                'device_brand_homepage'         => '',
-                'device_brand_icon'             => '',
-                'device_brand_icon_big'         => '',
-                'device_brand_info_url'         => '',
-                'crawler_last_seen' => '',
-                'crawler_category' => '',
-                'crawler_category_code' => '',
-                'crawler_respect_robotstxt' => ''
-            ),
+        $ret = array(
+            'user_agent' =>
+                array(
+                    'ua_string' => '',
+                    'ua_class' => '',
+                    'ua_class_code' => '',
+                    'ua' => '',
+                    'ua_version' => '',
+                    'ua_version_major' => '',
+                    'ua_uptodate_current_version' => '',
+                    'ua_family' => '',
+                    'ua_family_code' => '',
+                    'ua_family_homepage' => '',
+                    'ua_family_vendor' => '',
+                    'ua_family_vendor_code' => '',
+                    'ua_family_vendor_homepage' => '',
+                    'ua_family_icon' => '',
+                    'ua_family_icon_big' => '',
+                    'ua_family_info_url' => '',
+                    'ua_engine' => '',
+                    'os' => '',
+                    'os_code' => '',
+                    'os_homepage' => '',
+                    'os_icon' => '',
+                    'os_icon_big' => '',
+                    'os_info_url' => '',
+                    'os_family' => '',
+                    'os_family_code' => '',
+                    'os_family_vendor' => '',
+                    'os_family_vendor_code' => '',
+                    'os_family_vendor_homepage' => '',
+                    'device_class' => '',
+                    'device_class_code' => '',
+                    'device_class_icon' => '',
+                    'device_class_icon_big' => '',
+                    'device_class_info_url' => '',
+                    'device_marketname' => '',
+                    'device_brand' => '',
+                    'device_brand_code' => '',
+                    'device_brand_homepage' => '',
+                    'device_brand_icon' => '',
+                    'device_brand_icon_big' => '',
+                    'device_brand_info_url' => '',
+                    'crawler_last_seen' => '',
+                    'crawler_category' => '',
+                    'crawler_category_code' => '',
+                    'crawler_respect_robotstxt' => ''
+                ),
             'ip_address' =>
-            array('ip' => '',
-                'ip_ver' => '',
-                'ip_classification' => '',
-                'ip_classification_code' => '',
-                'ip_hostname' => '',
-                'ip_last_seen' => '',
-                'ip_country' => '',
-                'ip_country_code' => '',
-                'ip_city' => '',
-                'crawler_name' => '',
-                'crawler_ver' => '',
-                'crawler_ver_major' => '',
-                'crawler_family' => '',
-                'crawler_family_code' => '',
-                'crawler_family_homepage' => '',
-                'crawler_family_vendor' => '',
-                'crawler_family_vendor_code' => '',
-                'crawler_family_vendor_homepage' => '',
-                'crawler_family_icon' => '',
-                'crawler_family_info_url' => '',
-                'crawler_last_seen' => '',
-                'crawler_category' => '',
-                'crawler_category_code' => '',
-                'crawler_respect_robotstxt' => '',
-                'datacenter_name' => '',
-                'datacenter_name_code' => '',
-                'datacenter_homepage' => ''
-            )
+                array(
+                    'ip' => '',
+                    'ip_ver' => '',
+                    'ip_classification' => '',
+                    'ip_classification_code' => '',
+                    'ip_hostname' => '',
+                    'ip_last_seen' => '',
+                    'ip_country' => '',
+                    'ip_country_code' => '',
+                    'ip_city' => '',
+                    'crawler_name' => '',
+                    'crawler_ver' => '',
+                    'crawler_ver_major' => '',
+                    'crawler_family' => '',
+                    'crawler_family_code' => '',
+                    'crawler_family_homepage' => '',
+                    'crawler_family_vendor' => '',
+                    'crawler_family_vendor_code' => '',
+                    'crawler_family_vendor_homepage' => '',
+                    'crawler_family_icon' => '',
+                    'crawler_family_info_url' => '',
+                    'crawler_last_seen' => '',
+                    'crawler_category' => '',
+                    'crawler_category_code' => '',
+                    'crawler_respect_robotstxt' => '',
+                    'datacenter_name' => '',
+                    'datacenter_name_code' => '',
+                    'datacenter_homepage' => ''
+                )
         );
 
         if (!empty($this->ua)) {
             $this->logger->debug("parse useragent string: START (useragent: " . $this->ua . ")");
-            
+
             $usedCache = false;
-            if($this->cacheEnable) {
-                $retCache = $this->getCache( md5($this->ua) );
-                if($retCache) {
+            if ($this->cacheEnable) {
+                $retCache = $this->getCache(md5($this->ua));
+                if ($retCache) {
                     $ret['user_agent'] = unserialize($retCache);
                     $usedCache = true;
                 }
             }
-            if(!$usedCache) {             
+            if (!$usedCache) {
                 $client_id = 0;
                 $client_class_id = -1;
                 $os_id = 0;
@@ -371,7 +378,7 @@ class Parser implements ParserInterface
                         }
                     }
                     // client_os_relation
-                    if ($os_id == 0 AND $client_id != 0) {
+                    if ($os_id == 0 and $client_id != 0) {
                         $q = $this->dbdat->query("SELECT os_id,family,family_code,name,name_code,homepage,icon,icon_big,vendor,vendor_code,vendor_homepage
                                                       FROM udger_client_os_relation
                                                       JOIN udger_os_list ON udger_os_list.id=udger_client_os_relation.os_id
@@ -410,7 +417,7 @@ class Parser implements ParserInterface
                             break;
                         }
                     }
-                    if ($deviceclass_id == 0 AND $client_class_id != -1) {
+                    if ($deviceclass_id == 0 and $client_class_id != -1) {
                         $q = $this->dbdat->query("SELECT deviceclass_id,name,name_code,icon,icon_big 
                                                   FROM udger_deviceclass_list
                                                   JOIN udger_client_class ON udger_client_class.deviceclass_id=udger_deviceclass_list.id
@@ -427,38 +434,38 @@ class Parser implements ParserInterface
                     }
 
                     // device marketname
-                    if($ret['user_agent']['os_family_code']) { 
+                    if ($ret['user_agent']['os_family_code']) {
                         $q = $this->dbdat->query("SELECT id,regstring FROM udger_devicename_regex WHERE 
-                                                  ((os_family_code='".$ret['user_agent']['os_family_code']."' AND os_code='-all-') 
+                                                  ((os_family_code='" . $ret['user_agent']['os_family_code'] . "' AND os_code='-all-') 
                                                   OR 
-                                                  (os_family_code='".$ret['user_agent']['os_family_code']."' AND os_code='".$ret['user_agent']['os_code']."'))
+                                                  (os_family_code='" . $ret['user_agent']['os_family_code'] . "' AND os_code='" . $ret['user_agent']['os_code'] . "'))
                                                   order by sequence");
                         while ($r = $q->fetchArray(SQLITE3_ASSOC)) {
-                            @preg_match($r["regstring"],$this->ua,$result);                        
+                            @preg_match($r["regstring"], $this->ua, $result);
 
-                            if(array_key_exists(1, $result)) {
-                                $qC=$this->dbdat->query("SELECT marketname,brand_code,brand,brand_url,icon,icon_big
+                            if (array_key_exists(1, $result)) {
+                                $qC = $this->dbdat->query("SELECT marketname,brand_code,brand,brand_url,icon,icon_big
                                                          FROM udger_devicename_list
                                                          JOIN udger_devicename_brand ON udger_devicename_brand.id=udger_devicename_list.brand_id 
-                                                         WHERE regex_id=".$r["id"]." and code = '".\SQLite3::escapeString(trim($result[1]))."' COLLATE NOCASE  ");
+                                                         WHERE regex_id=" . $r["id"] . " and code = '" . \SQLite3::escapeString(trim($result[1])) . "' COLLATE NOCASE  ");
 
-                                if($rC = $qC->fetchArray(SQLITE3_ASSOC)) {
+                                if ($rC = $qC->fetchArray(SQLITE3_ASSOC)) {
                                     $this->logger->debug("parse useragent string: device marketname found");
-                                    $ret['user_agent']['device_marketname']       = $rC['marketname'];
-                                    $ret['user_agent']['device_brand']            = $rC['brand'];
-                                    $ret['user_agent']['device_brand_code']       = $rC['brand_code'];
-                                    $ret['user_agent']['device_brand_homepage']   = $rC['brand_url'];
-                                    $ret['user_agent']['device_brand_icon']       = $rC['icon'];
-                                    $ret['user_agent']['device_brand_icon_big']   = $rC['icon_big'];
-                                    $ret['user_agent']['device_brand_info_url']   = "https://udger.com/resources/ua-list/devices-brand-detail?brand=".$rC['brand_code'];                             
+                                    $ret['user_agent']['device_marketname'] = $rC['marketname'];
+                                    $ret['user_agent']['device_brand'] = $rC['brand'];
+                                    $ret['user_agent']['device_brand_code'] = $rC['brand_code'];
+                                    $ret['user_agent']['device_brand_homepage'] = $rC['brand_url'];
+                                    $ret['user_agent']['device_brand_icon'] = $rC['icon'];
+                                    $ret['user_agent']['device_brand_icon_big'] = $rC['icon_big'];
+                                    $ret['user_agent']['device_brand_info_url'] = "https://udger.com/resources/ua-list/devices-brand-detail?brand=" . $rC['brand_code'];
 
                                     break;
-                                }                
+                                }
                             }
                         }
                     }
-                    if($this->cacheEnable) {
-                        $this->setCache( md5($this->ua) , serialize($ret['user_agent']) );
+                    if ($this->cacheEnable) {
+                        $this->setCache(md5($this->ua), serialize($ret['user_agent']));
                     }
                 }
             }
@@ -471,7 +478,7 @@ class Parser implements ParserInterface
             $this->logger->debug("parse IP address: START (IP: " . $this->ip . ")");
             $ret['ip_address']['ip'] = $this->ip;
             $ipver = $this->ipHelper->getIpVersion($this->ip);
-            
+
             if ($ipver !== false) {
                 if ($ipver === IPInterface::IPv6) {
                     $this->ip = inet_ntop(inet_pton($this->ip));
@@ -486,7 +493,7 @@ class Parser implements ParserInterface
                                           LEFT JOIN udger_crawler_list ON udger_crawler_list.id=udger_ip_list.crawler_id
                                           LEFT JOIN udger_crawler_class ON udger_crawler_class.id=udger_crawler_list.class_id
                                           WHERE ip='" . $this->ip . "' ORDER BY sequence");
-                
+
                 if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
                     $ret['ip_address']['ip_classification'] = $r['ip_classification'];
                     $ret['ip_address']['ip_classification_code'] = $r['ip_classification_code'];
@@ -517,42 +524,43 @@ class Parser implements ParserInterface
                     $ret['ip_address']['ip_classification'] = 'Unrecognized';
                     $ret['ip_address']['ip_classification_code'] = 'unrecognized';
                 }
-                
+
                 if ($this->ipHelper->getIpVersion($ret['ip_address']['ip']) === IPInterface::IPv4) {
-                    
+
                     $ipLong = $this->ipHelper->getIpLong($ret['ip_address']['ip']);
-                    
+
                     $q = $this->dbdat->query("select name,name_code,homepage 
                                        FROM udger_datacenter_range
                                        JOIN udger_datacenter_list ON udger_datacenter_range.datacenter_id=udger_datacenter_list.id
                                        where iplong_from <= " . $ipLong . " AND iplong_to >= " . $ipLong . " ");
-                    
+
                     if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
                         $ret['ip_address']['datacenter_name'] = $r['name'];
                         $ret['ip_address']['datacenter_name_code'] = $r['name_code'];
                         $ret['ip_address']['datacenter_homepage'] = $r['homepage'];
                     }
-                }                
-                else if ($this->ipHelper->getIpVersion($ret['ip_address']['ip']) === IPInterface::IPv6) {
-                    $ipInt = $this->ipHelper->getIp6array($ret['ip_address']['ip']);
-                    $q = $this->dbdat->query("select name,name_code,homepage 
+                } else {
+                    if ($this->ipHelper->getIpVersion($ret['ip_address']['ip']) === IPInterface::IPv6) {
+                        $ipInt = $this->ipHelper->getIp6array($ret['ip_address']['ip']);
+                        $q = $this->dbdat->query("select name,name_code,homepage 
                                           FROM udger_datacenter_range6
                                           JOIN udger_datacenter_list ON udger_datacenter_range6.datacenter_id=udger_datacenter_list.id
                                           where 
-                                          iplong_from0 <= ".$ipInt[0]." AND iplong_to0 >= ".$ipInt[0]." AND
-                                          iplong_from1 <= ".$ipInt[1]." AND iplong_to1 >= ".$ipInt[1]." AND
-                                          iplong_from2 <= ".$ipInt[2]." AND iplong_to2 >= ".$ipInt[2]." AND
-                                          iplong_from3 <= ".$ipInt[3]." AND iplong_to3 >= ".$ipInt[3]." AND
-                                          iplong_from4 <= ".$ipInt[4]." AND iplong_to4 >= ".$ipInt[4]." AND
-                                          iplong_from5 <= ".$ipInt[5]." AND iplong_to5 >= ".$ipInt[5]." AND
-                                          iplong_from6 <= ".$ipInt[6]." AND iplong_to6 >= ".$ipInt[6]." AND
-                                          iplong_from7 <= ".$ipInt[7]." AND iplong_to7 >= ".$ipInt[7]." 
+                                          iplong_from0 <= " . $ipInt[0] . " AND iplong_to0 >= " . $ipInt[0] . " AND
+                                          iplong_from1 <= " . $ipInt[1] . " AND iplong_to1 >= " . $ipInt[1] . " AND
+                                          iplong_from2 <= " . $ipInt[2] . " AND iplong_to2 >= " . $ipInt[2] . " AND
+                                          iplong_from3 <= " . $ipInt[3] . " AND iplong_to3 >= " . $ipInt[3] . " AND
+                                          iplong_from4 <= " . $ipInt[4] . " AND iplong_to4 >= " . $ipInt[4] . " AND
+                                          iplong_from5 <= " . $ipInt[5] . " AND iplong_to5 >= " . $ipInt[5] . " AND
+                                          iplong_from6 <= " . $ipInt[6] . " AND iplong_to6 >= " . $ipInt[6] . " AND
+                                          iplong_from7 <= " . $ipInt[7] . " AND iplong_to7 >= " . $ipInt[7] . " 
                                           ");
-                                                  
-                    if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
-                        $ret['ip_address']['datacenter_name'] = $r['name'];
-                        $ret['ip_address']['datacenter_name_code'] = $r['name_code'];
-                        $ret['ip_address']['datacenter_homepage'] = $r['homepage'];
+
+                        if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                            $ret['ip_address']['datacenter_name'] = $r['name'];
+                            $ret['ip_address']['datacenter_name_code'] = $r['name_code'];
+                            $ret['ip_address']['datacenter_homepage'] = $r['homepage'];
+                        }
                     }
                 }
             }
@@ -577,38 +585,40 @@ class Parser implements ParserInterface
             $this->dbdat = new \SQLite3($this->path, SQLITE3_OPEN_READONLY);
         }
     }
-    
+
     /**
-     * LRU cashe set 
+     * LRU cashe set
      */
-    protected function setCache($key, $value) {
+    protected function setCache($key, $value)
+    {
         $this->logger->debug('LRUcache: set to key' . $key);
         $this->cache[$key] = $value;
         if (count($this->cache) > $this->cacheSize) {
             array_shift($this->cache);
         }
     }
-    
+
     /**
-     * LRU cashe get 
+     * LRU cashe get
      */
-    protected function getCache($key) {
+    protected function getCache($key)
+    {
         $this->logger->debug('LRUcache: get key' . $key);
-        if ( ! isset($this->cache[$key])) {
-            $this->logger->debug('LRUcache: key' . $key . ' Not Found' );
+        if (!isset($this->cache[$key])) {
+            $this->logger->debug('LRUcache: key' . $key . ' Not Found');
             return null;
         }
         // Put the value gotten to last.
         $tmpValue = $this->cache[$key];
         unset($this->cache[$key]);
         $this->cache[$key] = $tmpValue;
-        $this->logger->debug('LRUcache: key' . $key . ' Found' );
+        $this->logger->debug('LRUcache: key' . $key . ' Found');
         return $tmpValue;
-    }   
-    
+    }
+
     /**
      * Set LRU cache enable/disable
-     * 
+     *
      * @param bool
      * @return bool
      */
@@ -616,25 +626,26 @@ class Parser implements ParserInterface
     {
         $this->cacheEnable = $set;
         $log = $set ? 'true' : 'false';
-        $this->logger->debug('LRUcache: enable/disable: ' . $log );
+        $this->logger->debug('LRUcache: enable/disable: ' . $log);
         return true;
     }
-    
+
     /**
      * Set LRU cache enable/disable
-     * 
+     *
      * @param Int
      * @return bool
      */
     public function setCacheSize($size)
     {
         $this->cacheSize = $size;
-        $this->logger->debug('LRUcache: set size: ' . $size );
+        $this->logger->debug('LRUcache: set size: ' . $size);
         return true;
     }
+
     /**
-     * Clear LRU cache 
-     * 
+     * Clear LRU cache
+     *
      * @return bool
      */
     public function clearCache()
@@ -643,27 +654,28 @@ class Parser implements ParserInterface
         $this->logger->debug('LRUcache: clear cache');
         return true;
     }
-    
+
     /**
      * Set path to sqlite file
-     * 
+     *
      * @param string
      * @return bool
+     * @throws Exception
      */
     public function setDataFile($path)
     {
         if (false === file_exists($path)) {
             throw new Exception(sprintf("%s does not exist", $path));
-        }   
-        
+        }
+
         $this->path = $path;
-        
+
         return true;
     }
 
     /**
      * Set the account access key
-     * 
+     *
      * @param string
      * @return bool
      */

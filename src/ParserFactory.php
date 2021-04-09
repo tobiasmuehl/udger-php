@@ -2,6 +2,7 @@
 
 namespace Udger;
 
+use Exception;
 use Monolog\Logger;
 use Monolog\Handler\NullHandler;
 use Psr\Log\LoggerInterface;
@@ -11,26 +12,24 @@ use Psr\Log\LoggerInterface;
  *
  * @author tiborb
  */
-class ParserFactory {
-    
+class ParserFactory
+{
     /**
-     *
      * @var string
      */
     private $loggerName = 'udger';
-    
+
     /**
      * @var LoggerInterface
      */
     private $logger;
-    
+
     /**
      * @var string $dataFile path to the data file
      */
     private $dataFile;
-    
+
     /**
-     * 
      * @param string $dataFile path to the data file
      * @param LoggerInterface $logger
      */
@@ -46,11 +45,11 @@ class ParserFactory {
     }
 
     /**
-     * 
-     * @return \Udger\Parser
+     * @return Parser
+     * @throws Exception
      */
     public function getParser()
-    {   
+    {
         $parser = new Parser($this->logger, new Helper\IP());
         $parser->setDataFile($this->dataFile);
         return $parser;
