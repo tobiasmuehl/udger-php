@@ -12,6 +12,7 @@ namespace Udger;
 
 use Exception;
 use GuzzleHttp\Client;
+use PDO;
 use Psr\Log\LoggerInterface;
 use Udger\Helper\IPInterface;
 
@@ -67,7 +68,7 @@ class Parser implements ParserInterface
     /**
      * DB link
      *
-     * @type object
+     * @type PDO
      */
     protected $dbdat;
 
@@ -290,12 +291,15 @@ class Parser implements ParserInterface
                 $ret['user_agent']['ua_class_code'] = 'unrecognized';
 
                 // crawler            
-                $q = $this->dbdat->query("SELECT udger_crawler_list.id as botid,name,ver,ver_major,last_seen,respect_robotstxt,family,family_code,family_homepage,family_icon,vendor,vendor_code,vendor_homepage,crawler_classification,crawler_classification_code
+                $q = $this->dbdat->prepare("SELECT udger_crawler_list.id as botid,name,ver,ver_major,last_seen,respect_robotstxt,family,family_code,family_homepage,family_icon,vendor,vendor_code,vendor_homepage,crawler_classification,crawler_classification_code
                                               FROM udger_crawler_list
                                               LEFT JOIN udger_crawler_class ON udger_crawler_class.id=udger_crawler_list.class_id
-                                              WHERE ua_string='" . $this->dbdat->escapeString($this->ua) . "'");
+                                              WHERE ua_string=:ua");
+                $q->execute([
+                    ':ua' => $this->ua,
+                ]);
 
-                if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                if ($r = $q->fetch()) {
                     $this->logger->debug("parse useragent string: crawler found");
 
                     $client_class_id = 99;
@@ -323,7 +327,7 @@ class Parser implements ParserInterface
                                                   JOIN udger_client_list ON udger_client_list.id=udger_client_regex.client_id
                                                   JOIN udger_client_class ON udger_client_class.id=udger_client_list.class_id
                                                   ORDER BY sequence ASC");
-                    while ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                    while ($r = $q->fetch()) {
                         if (@preg_match($r["regstring"], $this->ua, $result)) {
                             $this->logger->debug("parse useragent string: client found");
                             $client_id = $r['client_id'];
@@ -359,7 +363,7 @@ class Parser implements ParserInterface
                                                   FROM udger_os_regex
                                                   JOIN udger_os_list ON udger_os_list.id=udger_os_regex.os_id
                                                   ORDER BY sequence ASC");
-                    while ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                    while ($r = $q->fetch()) {
                         if (@preg_match($r["regstring"], $this->ua, $result)) {
                             $this->logger->debug("parse useragent string: os found");
                             $os_id = $r['os_id'];
@@ -379,11 +383,14 @@ class Parser implements ParserInterface
                     }
                     // client_os_relation
                     if ($os_id == 0 and $client_id != 0) {
-                        $q = $this->dbdat->query("SELECT os_id,family,family_code,name,name_code,homepage,icon,icon_big,vendor,vendor_code,vendor_homepage
+                        $q = $this->dbdat->prepare("SELECT os_id,family,family_code,name,name_code,homepage,icon,icon_big,vendor,vendor_code,vendor_homepage
                                                       FROM udger_client_os_relation
                                                       JOIN udger_os_list ON udger_os_list.id=udger_client_os_relation.os_id
-                                                      WHERE client_id=" . $client_id . " ");
-                        if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                                                      WHERE client_id=:client_id");
+                        $q->execute([
+                            ':client_id' => $client_id,
+                        ]);
+                        if ($r = $q->fetch()) {
                             $this->logger->debug("parse useragent string: client os relation found");
                             $os_id = $r['os_id'];
                             $ret['user_agent']['os'] = $r['name'];
@@ -405,7 +412,7 @@ class Parser implements ParserInterface
                                                   JOIN udger_deviceclass_list ON udger_deviceclass_list.id=udger_deviceclass_regex.deviceclass_id
                                                   ORDER BY sequence ASC");
 
-                    while ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                    while ($r = $q->fetch()) {
                         if (@preg_match($r["regstring"], $this->ua, $result)) {
                             $this->logger->debug("parse useragent string: device found by regex");
                             $deviceclass_id = $r['deviceclass_id'];
@@ -418,11 +425,14 @@ class Parser implements ParserInterface
                         }
                     }
                     if ($deviceclass_id == 0 and $client_class_id != -1) {
-                        $q = $this->dbdat->query("SELECT deviceclass_id,name,name_code,icon,icon_big 
+                        $q = $this->dbdat->prepare("SELECT deviceclass_id,name,name_code,icon,icon_big 
                                                   FROM udger_deviceclass_list
                                                   JOIN udger_client_class ON udger_client_class.deviceclass_id=udger_deviceclass_list.id
-                                                  WHERE udger_client_class.id=" . $client_class_id . " ");
-                        if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                                                  WHERE udger_client_class.id=:client_class_id");
+                        $q->execute([
+                            ':client_class_id' => $client_class_id,
+                        ]);
+                        if ($r = $q->fetch()) {
                             $this->logger->debug("parse useragent string: device found by deviceclass");
                             $deviceclass_id = $r['deviceclass_id'];
                             $ret['user_agent']['device_class'] = $r['name'];
@@ -435,21 +445,28 @@ class Parser implements ParserInterface
 
                     // device marketname
                     if ($ret['user_agent']['os_family_code']) {
-                        $q = $this->dbdat->query("SELECT id,regstring FROM udger_devicename_regex WHERE 
-                                                  ((os_family_code='" . $ret['user_agent']['os_family_code'] . "' AND os_code='-all-') 
+                        $q = $this->dbdat->prepare("SELECT id,regstring FROM udger_devicename_regex WHERE 
+                                                  ((os_family_code=:os_family_code AND os_code='-all-') 
                                                   OR 
-                                                  (os_family_code='" . $ret['user_agent']['os_family_code'] . "' AND os_code='" . $ret['user_agent']['os_code'] . "'))
+                                                  (os_family_code=:os_family_code AND os_code=:os_code))
                                                   order by sequence");
-                        while ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                        $q->execute([
+                            ':os_family_code' => $ret['user_agent']['os_family_code'],
+                            ':os_code' => $ret['user_agent']['os_code'],
+                        ]);
+                        while ($r = $q->fetch()) {
                             @preg_match($r["regstring"], $this->ua, $result);
 
                             if (array_key_exists(1, $result)) {
-                                $qC = $this->dbdat->query("SELECT marketname,brand_code,brand,brand_url,icon,icon_big
+                                $qC = $this->dbdat->prepare("SELECT marketname,brand_code,brand,brand_url,icon,icon_big
                                                          FROM udger_devicename_list
                                                          JOIN udger_devicename_brand ON udger_devicename_brand.id=udger_devicename_list.brand_id 
-                                                         WHERE regex_id=" . $r["id"] . " and code = '" . \SQLite3::escapeString(trim($result[1])) . "' COLLATE NOCASE  ");
-
-                                if ($rC = $qC->fetchArray(SQLITE3_ASSOC)) {
+                                                         WHERE regex_id=:regex_id and code = :code COLLATE NOCASE  ");
+                                $qC->execute([
+                                    ':regex_id' => $r["id"],
+                                    ':code' => trim($result[1])
+                                ]);
+                                if ($rC = $qC->fetch()) {
                                     $this->logger->debug("parse useragent string: device marketname found");
                                     $ret['user_agent']['device_marketname'] = $rC['marketname'];
                                     $ret['user_agent']['device_brand'] = $rC['brand'];
@@ -486,15 +503,18 @@ class Parser implements ParserInterface
                 }
 
                 $ret['ip_address']['ip_ver'] = $ipver;
-                $q = $this->dbdat->query("SELECT udger_crawler_list.id as botid,ip_last_seen,ip_hostname,ip_country,ip_city,ip_country_code,ip_classification,ip_classification_code,
+                $q = $this->dbdat->prepare("SELECT udger_crawler_list.id as botid,ip_last_seen,ip_hostname,ip_country,ip_city,ip_country_code,ip_classification,ip_classification_code,
                                           name,ver,ver_major,last_seen,respect_robotstxt,family,family_code,family_homepage,family_icon,vendor,vendor_code,vendor_homepage,crawler_classification,crawler_classification_code
                                           FROM udger_ip_list
                                           JOIN udger_ip_class ON udger_ip_class.id=udger_ip_list.class_id
                                           LEFT JOIN udger_crawler_list ON udger_crawler_list.id=udger_ip_list.crawler_id
                                           LEFT JOIN udger_crawler_class ON udger_crawler_class.id=udger_crawler_list.class_id
-                                          WHERE ip='" . $this->ip . "' ORDER BY sequence");
+                                          WHERE ip=:ip ORDER BY sequence");
+                $q->execute([
+                    ':ip' => $this->ip,
+                ]);
 
-                if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                if ($r = $q->fetch()) {
                     $ret['ip_address']['ip_classification'] = $r['ip_classification'];
                     $ret['ip_address']['ip_classification_code'] = $r['ip_classification_code'];
                     $ret['ip_address']['ip_last_seen'] = $r['ip_last_seen'];
@@ -513,7 +533,7 @@ class Parser implements ParserInterface
                     $ret['ip_address']['crawler_family_vendor_code'] = $r['vendor_code'];
                     $ret['ip_address']['crawler_family_vendor_homepage'] = $r['vendor_homepage'];
                     $ret['ip_address']['crawler_family_icon'] = $r['family_icon'];
-                    if ($r['ip_classification_code'] == 'crawler') {
+                    if ($r['ip_classification_code'] === 'crawler') {
                         $ret['ip_address']['crawler_family_info_url'] = "https://udger.com/resources/ua-list/bot-detail?bot=" . $r['family'] . "#id" . $r['botid'];
                     }
                     $ret['ip_address']['crawler_last_seen'] = $r['last_seen'];
@@ -529,12 +549,15 @@ class Parser implements ParserInterface
 
                     $ipLong = $this->ipHelper->getIpLong($ret['ip_address']['ip']);
 
-                    $q = $this->dbdat->query("select name,name_code,homepage 
+                    $q = $this->dbdat->prepare("select name,name_code,homepage 
                                        FROM udger_datacenter_range
                                        JOIN udger_datacenter_list ON udger_datacenter_range.datacenter_id=udger_datacenter_list.id
-                                       where iplong_from <= " . $ipLong . " AND iplong_to >= " . $ipLong . " ");
+                                       where iplong_from <= :ipLong AND iplong_to >= :ipLong ");
+                    $q->execute([
+                        ':ipLong' => $ipLong,
+                    ]);
 
-                    if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                    if ($r = $q->fetch()) {
                         $ret['ip_address']['datacenter_name'] = $r['name'];
                         $ret['ip_address']['datacenter_name_code'] = $r['name_code'];
                         $ret['ip_address']['datacenter_homepage'] = $r['homepage'];
@@ -542,21 +565,40 @@ class Parser implements ParserInterface
                 } else {
                     if ($this->ipHelper->getIpVersion($ret['ip_address']['ip']) === IPInterface::IPv6) {
                         $ipInt = $this->ipHelper->getIp6array($ret['ip_address']['ip']);
-                        $q = $this->dbdat->query("select name,name_code,homepage 
+                        $q = $this->dbdat->prepare("select name,name_code,homepage 
                                           FROM udger_datacenter_range6
                                           JOIN udger_datacenter_list ON udger_datacenter_range6.datacenter_id=udger_datacenter_list.id
                                           where 
-                                          iplong_from0 <= " . $ipInt[0] . " AND iplong_to0 >= " . $ipInt[0] . " AND
-                                          iplong_from1 <= " . $ipInt[1] . " AND iplong_to1 >= " . $ipInt[1] . " AND
-                                          iplong_from2 <= " . $ipInt[2] . " AND iplong_to2 >= " . $ipInt[2] . " AND
-                                          iplong_from3 <= " . $ipInt[3] . " AND iplong_to3 >= " . $ipInt[3] . " AND
-                                          iplong_from4 <= " . $ipInt[4] . " AND iplong_to4 >= " . $ipInt[4] . " AND
-                                          iplong_from5 <= " . $ipInt[5] . " AND iplong_to5 >= " . $ipInt[5] . " AND
-                                          iplong_from6 <= " . $ipInt[6] . " AND iplong_to6 >= " . $ipInt[6] . " AND
-                                          iplong_from7 <= " . $ipInt[7] . " AND iplong_to7 >= " . $ipInt[7] . " 
+                                          iplong_from0 <= :ipInt0 AND iplong_to0 >= :ipInt0 AND
+                                          iplong_from1 <= :ipInt1 AND iplong_to1 >= :ipInt1 AND
+                                          iplong_from2 <= :ipInt2 AND iplong_to2 >= :ipInt2 AND
+                                          iplong_from3 <= :ipInt3 AND iplong_to3 >= :ipInt3 AND
+                                          iplong_from4 <= :ipInt4 AND iplong_to4 >= :ipInt4 AND
+                                          iplong_from5 <= :ipInt5 AND iplong_to5 >= :ipInt5 AND
+                                          iplong_from6 <= :ipInt6 AND iplong_to6 >= :ipInt6 AND
+                                          iplong_from7 <= :ipInt7 AND iplong_to7 >= :ipInt7 
                                           ");
+                        $q->bindValue(':ipInt0', $ipInt[0]);
+                        $q->bindValue(':ipInt1', $ipInt[1]);
+                        $q->bindValue(':ipInt2', $ipInt[2]);
+                        $q->bindValue(':ipInt3', $ipInt[3]);
+                        $q->bindValue(':ipInt4', $ipInt[4]);
+                        $q->bindValue(':ipInt5', $ipInt[5]);
+                        $q->bindValue(':ipInt6', $ipInt[6]);
+                        $q->bindValue(':ipInt7', $ipInt[7]);
 
-                        if ($r = $q->fetchArray(SQLITE3_ASSOC)) {
+                        $q->execute([
+                            ':ipInt0' => $ipInt[0],
+                            ':ipInt1' => $ipInt[1],
+                            ':ipInt2' => $ipInt[2],
+                            ':ipInt3' => $ipInt[3],
+                            ':ipInt4' => $ipInt[4],
+                            ':ipInt5' => $ipInt[5],
+                            ':ipInt6' => $ipInt[6],
+                            ':ipInt7' => $ipInt[7],
+                        ]);
+
+                        if ($r = $q->fetch()) {
                             $ret['ip_address']['datacenter_name'] = $r['name'];
                             $ret['ip_address']['datacenter_name_code'] = $r['name_code'];
                             $ret['ip_address']['datacenter_homepage'] = $r['homepage'];
@@ -582,7 +624,10 @@ class Parser implements ParserInterface
                 throw new Exception("Unable to expand filepath");
             }
             $this->logger->debug(sprintf("db: open file: %s", $this->path));
-            $this->dbdat = new \SQLite3($this->path, SQLITE3_OPEN_READONLY);
+
+            $this->dbdat = new PDO("sqlite:{$this->path}");
+            $this->dbdat->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            $this->dbdat->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
     }
 

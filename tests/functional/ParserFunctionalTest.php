@@ -23,11 +23,6 @@ class ParserFunctionalTest extends Test
         $this->parser->setDataFile(dirname(__DIR__) . "/fixtures/udgercache/udgerdb_v3.dat");
     }
 
-    protected function _after()
-    {
-    }
-
-    // tests
     public function testParse()
     {
         $useragent = 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0';
@@ -75,6 +70,54 @@ class ParserFunctionalTest extends Test
         self::assertArrayHasKey("crawler_category", $result["user_agent"]);
         self::assertArrayHasKey("crawler_category_code", $result["user_agent"]);
         self::assertArrayHasKey("crawler_respect_robotstxt", $result["user_agent"]);
+    }
+
+    public function testParseBot()
+    {
+        $useragent = 'PINGOMETER_BOT_(HTTPS://PINGOMETER.COM)';
+        $this->parser->setUA($useragent);
+        $result = $this->parser->parse();
+
+        self::assertArrayHasKey("user_agent", $result);
+        self::assertEquals("PINGOMETER_BOT_(HTTPS://PINGOMETER.COM)",
+            $result["user_agent"]["ua_string"]);
+        self::assertEquals("Crawler", $result["user_agent"]["ua_class"]);
+        self::assertEquals("crawler", $result["user_agent"]["ua_class_code"]);
+        self::assertEquals("PINGOMETER", $result["user_agent"]["ua"]);
+        self::assertEquals("", $result["user_agent"]["ua_version"]);
+        self::assertEquals("", $result["user_agent"]["ua_version_major"]);
+        self::assertEquals("", $result["user_agent"]["ua_uptodate_current_version"]);
+        self::assertEquals("PINGOMETER", $result["user_agent"]["ua_family"]);
+        self::assertEquals("pingometer", $result["user_agent"]["ua_family_code"]);
+        self::assertEquals("", $result["user_agent"]["ua_family_homepage"]);
+        self::assertEquals("Pingometer, LLC", $result["user_agent"]["ua_family_vendor"]);
+        self::assertEquals("pingometer_llc", $result["user_agent"]["ua_family_vendor_code"]);
+        self::assertEquals("http://pingometer.com/", $result["user_agent"]["ua_family_vendor_homepage"]);
+        self::assertEquals("bot_pingometer.png", $result["user_agent"]["ua_family_icon"]);
+        self::assertEquals("", $result["user_agent"]["ua_family_icon_big"]);
+        self::assertEquals("https://udger.com/resources/ua-list/bot-detail?bot=PINGOMETER#id20112",
+            $result["user_agent"]["ua_family_info_url"]);
+        self::assertEquals("", $result["user_agent"]["ua_engine"]);
+        self::assertEquals("", $result["user_agent"]["os"]);
+        self::assertEquals("", $result["user_agent"]["os_code"]);
+        self::assertEquals("", $result["user_agent"]["os_homepage"]);
+        self::assertEquals("", $result["user_agent"]["os_icon"]);
+        self::assertEquals("", $result["user_agent"]["os_icon_big"]);
+        self::assertEquals("",
+            $result["user_agent"]["os_info_url"]);
+        self::assertEquals("", $result["user_agent"]["os_family"]);
+        self::assertEquals("", $result["user_agent"]["os_family_code"]);
+        self::assertEquals("", $result["user_agent"]["os_family_vendor"]);
+        self::assertEquals("", $result["user_agent"]["os_family_vendor_code"]);
+        self::assertEquals("", $result["user_agent"]["os_family_vendor_homepage"]);
+        self::assertEquals("", $result["user_agent"]["device_class"]);
+        self::assertEquals("", $result["user_agent"]["device_class_code"]);
+        self::assertEquals("", $result["user_agent"]["device_class_icon"]);
+        self::assertEquals("", $result["user_agent"]["device_class_icon_big"]);
+        self::assertEquals("", $result["user_agent"]["device_class_info_url"]);
+        self::assertEquals("Site monitor", $result["user_agent"]["crawler_category"]);
+        self::assertEquals("site_monitor", $result["user_agent"]["crawler_category_code"]);
+        self::assertEquals("no", $result["user_agent"]["crawler_respect_robotstxt"]);
     }
 
     public function testParseEmpty()
