@@ -1,23 +1,16 @@
 {
-  "name": "timeonegroup/udger-php",
+  "name": "tobiasmuehl/udger-php",
   "description": "PHP agent string parser based on Udger https://udger.com/products/local_parser",
-  "authors": [
-    {
-      "name": "Fabien Barbaud",
-      "email": "fabien.barbaud@timeonegroup.com"
-    }
-  ],
   "type": "library",
   "license": "MIT",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "require": {
     "php": ">=7.2.0",
-    "guzzlehttp/guzzle": "^6.2",
+    "guzzlehttp/guzzle": "^7",
     "monolog/monolog": "^2",
     "ext-json": "*",
     "ext-pdo": "*"
   },
-  "minimum-stability": "dev",
   "autoload": {
     "psr-4": {
       "Udger\\": "src/"
